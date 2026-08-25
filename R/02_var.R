@@ -256,16 +256,29 @@ plot_resposta(irf_comm, "comm", "cambio", esc_comm,
 invisible(dev.off())
 
 ## Todas as respostas do sistema, uma por pagina, para o Apendice.
+## Uma pagina por par choque-resposta, com o mesmo desenho dos graficos
+## principais. Nao se usa o plot() do pacote vars aqui porque ele monta
+## as sete respostas numa figura so e falha em paginas deste tamanho.
+
+nomes_var <- c(comm = "commodities", pimp = "precos de importacao",
+               vix = "VIX", hiato = "hiato do produto", ipca = "IPCA",
+               selic = "Selic", cambio = "cambio")
+
+choques <- list(list(obj = irf_comm, imp = "comm",   esc = esc_comm),
+                list(obj = irf_pimp, imp = "pimp",   esc = esc_pimp),
+                list(obj = irf_camb, imp = "cambio", esc = esc_camb))
+
 pdf(file.path(PASTA_GRAF, "05_respostas_completas.pdf"), width = 10, height = 6)
-ok <- try({
-  plot(irf_comm, plot.type = "single")
-  plot(irf_pimp, plot.type = "single")
-  plot(irf_camb, plot.type = "single")
-}, silent = TRUE)
+par(mar = c(5, 5, 4, 2))
+for (ch in choques) {
+  for (resp in colnames(y)) {
+    plot_resposta(ch$obj, ch$imp, resp, ch$esc,
+      paste0("Resposta de ", nomes_var[[resp]],
+             " a um choque de 1% em ", nomes_var[[ch$imp]]),
+      "resposta acumulada")
+  }
+}
 invisible(dev.off())
-if (inherits(ok, "try-error"))
-  cat("Aviso: o PDF de respostas completas falhou. Os quatro graficos\n",
-      "principais, em 04_respostas.pdf, foram gerados normalmente.\n")
 
 ## Confere a estrutura devolvida pelo irf() antes de montar a tabela.
 cat("Estrutura da resposta a impulso:",
