@@ -1,43 +1,18 @@
-## =========================================================
-## 02_var.R
-## Monografia: dinamica inflacionaria brasileira
-##
-## Estima o VAR e produz os resultados do Capitulo 4.
-##
-## ENTRADA : painel_var.csv   (gerado por 01_dados.R)
-##
-## MAPA DOS RESULTADOS
-##   1. Selecao de defasagens ......... Secao 3.3.1
-##   2. Diagnosticos do VAR ........... Secao 3.3.1 / Apendice A
-##   3. Causalidade de Granger ........ Secao 3.4.3
-##   4. Funcoes de resposta a impulso .. Secao 3.4.1 / Tabela 4.1
-##   5. Papel do cambio ............... Secao 3.4.2 / Tabela 4.2
-##   6. Decomposicao da variancia ..... Secao 3.4.3 / Tabela 4.3
-##   7. Subamostras ................... Secao 3.5.1 / Tabela 4.4
-##   8. Assimetria .................... Secao 3.5.2 / Tabela 4.5
-## =========================================================
 
-## ---------------------------------------------------------
-## Preparacao do ambiente
-## ---------------------------------------------------------
-## Instala os pacotes que faltarem, para o script rodar em qualquer
-## computador sem preparacao previa.
 
 pacotes <- c("vars", "dynlm", "lmtest")
 faltando <- pacotes[!pacotes %in% rownames(installed.packages())]
 if (length(faltando) > 0) install.packages(faltando, repos = "https://cloud.r-project.org")
 
-## Coloca a pasta de trabalho na pasta deste arquivo. Sem isso, o R
-## procura os dados em qualquer pasta que estiver aberta, e nao acha.
 definir_pasta <- function() {
-  # 1) rodando pelo RStudio
+ 
   if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
     caminho <- try(rstudioapi::getSourceEditorContext()$path, silent = TRUE)
     if (!inherits(caminho, "try-error") && nzchar(caminho)) {
       setwd(dirname(caminho)); return(invisible(TRUE))
     }
   }
-  # 2) rodando pelo terminal com Rscript
+
   args <- commandArgs(trailingOnly = FALSE)
   arq  <- sub("^--file=", "", args[grep("^--file=", args)])
   if (length(arq) > 0) { setwd(dirname(normalizePath(arq))); return(invisible(TRUE)) }
@@ -51,12 +26,6 @@ library(dynlm)
 library(lmtest)
 
 set.seed(20260819)     # fixa o bootstrap das bandas de confianca
-
-## ---------------------------------------------------------
-## Onde estao os arquivos
-## ---------------------------------------------------------
-## Funciona tanto com as pastas do projeto quanto com tudo junto
-## numa pasta so, como no repositorio do GitHub.
 
 achar <- function(nomes, pastas = c(".", "Paineis", "../Paineis", "..")) {
   for (n in nomes) for (p in pastas) {
@@ -78,16 +47,6 @@ pasta_saida <- function(nome) {
 PASTA_TABS <- pasta_saida("Tabs")
 PASTA_GRAF <- pasta_saida("graficos")
 
-## ---------------------------------------------------------
-## Graficos
-## ---------------------------------------------------------
-## Cada grafico ocupa uma pagina inteira do PDF, em tamanho grande.
-## O padrao do pacote vars empilha as sete respostas numa figura so,
-## o que fica ilegivel; por isso os graficos principais sao desenhados
-## aqui, um de cada vez.
-
-# Grafico de uma funcao de resposta a impulso (FRI) acumulada,
-# com banda de confianca.
 plot_resposta <- function(objeto, impulso, resposta, escala, titulo, ylab) {
   m  <- objeto$irf[[impulso]][,   resposta] / escala
   lo <- objeto$Lower[[impulso]][, resposta] / escala
@@ -104,14 +63,8 @@ plot_resposta <- function(objeto, impulso, resposta, escala, titulo, ylab) {
          col = c("grey10", "grey88"), lwd = c(2.5, 8), bty = "n", cex = 1.1)
 }
 
-## ---------------------------------------------------------
-## Montando a base
-## ---------------------------------------------------------
-
 dados <- read.csv(achar("painel_var.csv"))
 
-## Confere se as colunas esperadas vieram todas, para o erro aparecer
-## aqui, com a causa explicita, e nao dentro da funcao seguinte.
 esperadas <- c("dlicbr", "dlpimp", "lvix", "hiato", "infl", "dselic", "dlcambio")
 faltando <- setdiff(esperadas, names(dados))
 if (length(faltando) > 0)
@@ -121,15 +74,13 @@ if (length(faltando) > 0)
 
 y <- ts(as.matrix(dados[, esperadas]), start = c(2003, 2), frequency = 12)
 
-# A ordem das colunas E a ordenacao de Cholesky da Secao 3.3.2:
-# bloco externo primeiro, cambio por ultimo.
 colnames(y) <- c("comm", "pimp", "vix", "hiato", "ipca", "selic", "cambio")
 
 cat("Painel:", nrow(y), "observacoes,", ncol(y), "variaveis\n")
 head(y)
 tail(y)
 
-## Uma pagina por variavel, em graficos/02_series.pdf
+# Uma pagina por variavel, em graficos/02_series.pdf
 rotulos <- c("Commodities (variacao % mensal)",
              "Precos de importacao (variacao % mensal)",
              "VIX (logaritmo)", "Hiato do produto (%)",
@@ -148,20 +99,9 @@ for (j in 1:ncol(y)) {
 }
 invisible(dev.off())
 
-## ---------------------------------------------------------
-## 1. Selecao de defasagens (Secao 3.3.1)
-## ---------------------------------------------------------
 
 VARselect(y, lag.max = 12, type = "const")
 
-# Os criterios apontam ordens curtas, mas elas deixam autocorrelacao
-# nos residuos. Testa-se de p = 1 a p = 8 pelo teste de Breusch-Godfrey
-# e adota-se o menor p sem autocorrelacao a 5%.
-#
-# ATENCAO ao numero de defasagens do teste. O BG multivariado tem
-# K^2 x lags.bg graus de liberdade. Com K = 7 variaveis e 280 observacoes,
-# lags.bg = 1 usa 49 gl e lags.bg = 2 usa 98 gl, que cabem na amostra.
-# Valores maiores nao cabem: lags.bg = 6 ja pediria 294 gl.
 
 for (p in 1:8) {
   v  <- VAR(y, p = p, type = "const")
@@ -172,11 +112,6 @@ for (p in 1:8) {
               ifelse(b1 >= 0.05 & b2 >= 0.05, "<-- sem autocorrelacao", "")))
 }
 
-# Escolha a menor ordem marcada acima e use-a na linha P <- ... abaixo.
-
-## ---------------------------------------------------------
-## 2. Estimacao e diagnosticos (Secao 3.3.1)
-## ---------------------------------------------------------
 
 P <- 5     # ordem escolhida na saida do bloco anterior
 var1 <- VAR(y, p = P, type = "const")
@@ -187,40 +122,23 @@ summary(var1)
 roots(var1)
 cat("\nMaior raiz:", round(max(roots(var1)), 4), "\n")
 
-# Estabilidade estrutural dos parametros, uma equacao por pagina
-# O plot do CUSUM monta sozinho um painel por equacao, entao a pagina
-# precisa ser maior e as margens ficam por conta dele.
+
 pdf(file.path(PASTA_GRAF, "03_cusum.pdf"), width = 11, height = 9)
 ok <- try(plot(stability(var1, type = "OLS-CUSUM")), silent = TRUE)
 invisible(dev.off())
 if (inherits(ok, "try-error"))
   cat("Aviso: o grafico do CUSUM falhou. O teste em si nao e afetado.\n")
 
-# Autocorrelacao dos residuos do modelo escolhido.
-# lags.bg pequeno, pelo mesmo motivo explicado no bloco de selecao acima.
+
 serial.test(var1, lags.bg = 1, type = "BG")
 serial.test(var1, lags.bg = 2, type = "BG")
 
-## ---------------------------------------------------------
-## 3. Causalidade de Granger (Secao 3.4.3)
-## ---------------------------------------------------------
-## H0: a variavel indicada nao causa, no sentido de Granger,
-## as demais variaveis do sistema.
+
 
 causality(var1, cause = "comm")
 causality(var1, cause = "pimp")
 causality(var1, cause = "cambio")
 
-## ---------------------------------------------------------
-## 4. Funcoes de resposta a impulso, FRI (Secao 3.4.1, Tabela 4.1)
-## ---------------------------------------------------------
-## irf() com ortho = TRUE usa a decomposicao de Cholesky, e portanto
-## depende da ordenacao das variaveis definida acima.
-##
-## O irf() devolve a resposta a um choque de um desvio padrao.
-## Para ler o resultado como coeficiente de repasse, divide-se pela
-## resposta da propria variavel de origem no momento do choque, o que
-## equivale a normalizar o choque para 1%.
 
 H <- 24
 
@@ -236,7 +154,7 @@ esc_comm <- irf_comm$irf$comm[1, "comm"]
 esc_pimp <- irf_pimp$irf$pimp[1, "pimp"]
 esc_camb <- irf_camb$irf$cambio[1, "cambio"]
 
-## Os quatro graficos que entram no Capitulo 4, um por pagina.
+
 pdf(file.path(PASTA_GRAF, "04_respostas.pdf"), width = 10, height = 6)
 par(mar = c(5, 5, 4, 2))
 
@@ -254,11 +172,6 @@ plot_resposta(irf_comm, "comm", "cambio", esc_comm,
   "resposta acumulada (%)")
 
 invisible(dev.off())
-
-## Todas as respostas do sistema, uma por pagina, para o Apendice.
-## Uma pagina por par choque-resposta, com o mesmo desenho dos graficos
-## principais. Nao se usa o plot() do pacote vars aqui porque ele monta
-## as sete respostas numa figura so e falha em paginas deste tamanho.
 
 nomes_var <- c(comm = "commodities", pimp = "precos de importacao",
                vix = "VIX", hiato = "hiato do produto", ipca = "IPCA",
@@ -280,7 +193,7 @@ for (ch in choques) {
 }
 invisible(dev.off())
 
-## Confere a estrutura devolvida pelo irf() antes de montar a tabela.
+
 cat("Estrutura da resposta a impulso:",
     paste(dim(irf_comm$irf$comm), collapse = " linhas x "), "colunas\n")
 cat("Colunas:", paste(colnames(irf_comm$irf$comm), collapse = ", "), "\n")
@@ -290,8 +203,7 @@ cat("Bandas de confianca disponiveis:",
 linha <- function(objeto, impulso, escala, nome) {
   h <- c(7, 13, 25)                      # horizontes 6, 12 e 24 meses
   m  <- objeto$irf[[impulso]][h, "ipca"] / escala
-  # Se por algum motivo as bandas nao vierem, a tabela sai so com o
-  # ponto estimado, em vez de o script parar.
+ 
   lo <- if (!is.null(objeto$Lower)) objeto$Lower[[impulso]][h, "ipca"] / escala else NA_real_
   hi <- if (!is.null(objeto$Upper)) objeto$Upper[[impulso]][h, "ipca"] / escala else NA_real_
   data.frame(choque = nome, horizonte = c(6, 12, 24),
@@ -313,15 +225,6 @@ cat("\n=== TABELA 4.1: RESPOSTA ACUMULADA DO IPCA (%) ===\n")
 print(tab_irf, row.names = FALSE)
 write.csv(tab_irf, file.path(PASTA_TABS, "tab4_1_irf.csv"), row.names = FALSE)
 
-## ---------------------------------------------------------
-## 5. O papel do cambio (Secao 3.4.2, Tabela 4.2)
-## ---------------------------------------------------------
-## A_n = - (resposta do cambio ao choque de commodities)
-##         x (resposta do IPCA ao choque cambial)
-##
-## Como a alta das commodities tende a apreciar o real, a primeira
-## parcela e negativa e o sinal invertido torna A_n uma medida
-## positiva de amortecimento.
 
 h <- c(7, 13, 25)
 theta <- irf_comm$irf$comm[h, "cambio"] / esc_comm     # resposta do cambio
@@ -340,13 +243,10 @@ print(tab_cambio, row.names = FALSE)
 cat("resposta_cambio negativa indica apreciacao do real.\n")
 write.csv(tab_cambio, file.path(PASTA_TABS, "tab4_2_cambio.csv"), row.names = FALSE)
 
-## ---------------------------------------------------------
-## 6. Decomposicao da variancia (Secao 3.4.3, Tabela 4.3)
-## ---------------------------------------------------------
 
 fevd1 <- fevd(var1, n.ahead = H)
 
-## Grafico proprio: participacao de cada choque na variancia do IPCA.
+# Grafico proprio: participacao de cada choque na variancia do IPCA.
 pdf(file.path(PASTA_GRAF, "06_decomposicao_variancia.pdf"), width = 10, height = 7)
 par(mar = c(7.5, 5, 4, 2), xpd = TRUE)
 cores <- grey.colors(ncol(y), start = 0.15, end = 0.9)
@@ -367,16 +267,10 @@ cat("\n=== TABELA 4.3: DECOMPOSICAO DA VARIANCIA DO IPCA (%) ===\n")
 print(tab_fevd)
 write.csv(tab_fevd, file.path(PASTA_TABS, "tab4_3_fevd.csv"))
 
-## ---------------------------------------------------------
-## 7. Subamostras (Secao 3.5.1, Tabela 4.4)
-## ---------------------------------------------------------
-## O repasse cambial em 12 meses e comparado em duas janelas.
 
 repasse12 <- function(dados_ts) {
   v <- VAR(dados_ts, p = P, type = "const")
-  # Uma unica chamada, pedindo as duas respostas de que precisamos.
-  # A primeira linha da resposta do cambio ao proprio choque e o impacto,
-  # usado para normalizar o choque para 1%.
+ 
   ir <- irf(v, impulse = "cambio", response = c("ipca", "cambio"),
             n.ahead = 12, ortho = TRUE, cumulative = TRUE,
             boot = TRUE, runs = 500, ci = 0.90)
@@ -398,11 +292,7 @@ print(tab_sub, row.names = FALSE)
 cat("So ha evidencia de mudanca se os intervalos nao se sobrepuserem.\n")
 write.csv(tab_sub, file.path(PASTA_TABS, "tab4_4_subamostras.csv"), row.names = FALSE)
 
-## ---------------------------------------------------------
-## 8. Assimetria: depreciacoes x apreciacoes (Secao 3.5.2)
-## ---------------------------------------------------------
-## Separa a variacao cambial em parcela positiva e negativa e testa
-## se a soma dos coeficientes e igual nos dois casos.
+
 
 infl   <- y[, "ipca"]
 cambio <- y[, "cambio"]
