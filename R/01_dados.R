@@ -1,36 +1,18 @@
-## =========================================================
-## 01_dados.R
-## Monografia: dinamica inflacionaria brasileira
-##
-## Monta o painel descrito na Secao 3.1 e roda os testes de
-## raiz unitaria da Secao 3.2 (Tabela 3.1).
-##
-## ENTRADA : painel_completo.csv (ou painel_completo_1.csv)
-## SAIDAS  : painel_var.csv        painel pronto para o 02_var.R
-##           tab_adf.csv           Tabela 3.1
-## =========================================================
 
-## ---------------------------------------------------------
-## Preparacao do ambiente
-## ---------------------------------------------------------
-## Instala os pacotes que faltarem, para o script rodar em qualquer
-## computador sem preparacao previa.
 
 pacotes <- c("seasonal", "mFilter", "urca")
 faltando <- pacotes[!pacotes %in% rownames(installed.packages())]
 if (length(faltando) > 0) install.packages(faltando, repos = "https://cloud.r-project.org")
 
-## Coloca a pasta de trabalho na pasta deste arquivo. Sem isso, o R
-## procura os dados em qualquer pasta que estiver aberta, e nao acha.
 definir_pasta <- function() {
-  # 1) rodando pelo RStudio
+  
   if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
     caminho <- try(rstudioapi::getSourceEditorContext()$path, silent = TRUE)
     if (!inherits(caminho, "try-error") && nzchar(caminho)) {
       setwd(dirname(caminho)); return(invisible(TRUE))
     }
   }
-  # 2) rodando pelo terminal com Rscript
+ 
   args <- commandArgs(trailingOnly = FALSE)
   arq  <- sub("^--file=", "", args[grep("^--file=", args)])
   if (length(arq) > 0) { setwd(dirname(normalizePath(arq))); return(invisible(TRUE)) }
@@ -43,12 +25,6 @@ library(seasonal)
 library(mFilter)
 library(urca)
 
-## ---------------------------------------------------------
-## Onde estao os arquivos
-## ---------------------------------------------------------
-## O script funciona tanto com as pastas do projeto (R/, Paineis/,
-## Tabs/, graficos/) quanto com todos os arquivos juntos numa pasta so,
-## como no repositorio do GitHub. Ele procura sozinho.
 
 achar <- function(nomes, pastas = c(".", "Paineis", "../Paineis", "..")) {
   for (n in nomes) for (p in pastas) {
@@ -70,12 +46,7 @@ PASTA_PAINEIS <- pasta_saida("Paineis")
 PASTA_TABS    <- pasta_saida("Tabs")
 PASTA_GRAF    <- pasta_saida("graficos")
 
-## ---------------------------------------------------------
-## Graficos
-## ---------------------------------------------------------
-## Todos os graficos sao gravados em graficos/01_series.pdf, um por
-## pagina, em tamanho grande. Isso evita o problema de varias series
-## espremidas num painel unico, ilegiveis no RStudio.
+
 
 serie_plot <- function(x, titulo, unidade = "", zero = FALSE) {
   plot(x, type = "l", lwd = 1.6, col = "grey20",
@@ -85,14 +56,7 @@ serie_plot <- function(x, titulo, unidade = "", zero = FALSE) {
   grid(col = "grey85")
 }
 
-## ---------------------------------------------------------
-## 1. Leitura e construcao das series como objetos ts
-## ---------------------------------------------------------
 
-## O arquivo pode estar em dois formatos. O original usa virgula como
-## separador e ponto decimal. Se ele for aberto e salvo pelo Excel em
-## portugues, passa a usar ponto e virgula como separador e virgula
-## decimal. A funcao abaixo reconhece os dois casos.
 
 ler_painel <- function(arquivo) {
   primeira <- readLines(arquivo, n = 1)
@@ -101,8 +65,7 @@ ler_painel <- function(arquivo) {
 
 dados <- ler_painel(achar(c("painel_completo.csv", "painel_completo_1.csv")))
 
-## Confere se as colunas necessarias vieram todas. Se o arquivo tiver sido
-## salvo em outro formato, o erro aparece aqui, com a causa explicita.
+
 necessarias <- c("ipca", "cambio", "selic", "ibcbr", "icbr_usd", "pimp", "vix")
 faltando <- setdiff(necessarias, names(dados))
 if (length(faltando) > 0) {
@@ -136,10 +99,7 @@ serie_plot(selic,  "Taxa Selic acumulada no mes", "% a.a.")
 serie_plot(ibcbr,  "IBC-Br dessazonalizado", "indice")
 serie_plot(vix,    "Indice VIX", "pontos")
 
-## ---------------------------------------------------------
-## 2. Ajustamento sazonal do IPCA (Secao 3.1.3)
-## ---------------------------------------------------------
-## O IBC-Br do SGS 24364 ja e divulgado dessazonalizado.
+
 
 infl <- final(seas(ipca))
 
@@ -153,9 +113,7 @@ grid(col = "grey85")
 legend("topleft", c("observado", "dessazonalizado"),
        col = c("grey65", "black"), lwd = c(1.4, 2), bty = "n", cex = 1.2)
 
-## ---------------------------------------------------------
-## 3. Hiato do produto pelo filtro HP (Secao 3.1.2)
-## ---------------------------------------------------------
+
 
 hp    <- hpfilter(log(ibcbr), freq = 14400, type = "lambda")
 hiato <- 100 * hp$cycle
@@ -163,9 +121,6 @@ hiato <- 100 * hp$cycle
 serie_plot(hiato, "Hiato do produto (filtro HP)", "% do produto potencial",
            zero = TRUE)
 
-## ---------------------------------------------------------
-## 4. Transformacoes (Secao 3.1.3)
-## ---------------------------------------------------------
 
 dlicbr   <- 100 * diff(log(icbr))     # variacao % mensal
 dlpimp   <- 100 * diff(log(pimp))
@@ -173,12 +128,7 @@ dlcambio <- 100 * diff(log(cambio))
 dselic   <- diff(selic)               # Selic em primeira diferenca
 lvix     <- log(vix)                  # VIX em logaritmo
 
-## ---------------------------------------------------------
-## 5. Testes de raiz unitaria (Secao 3.2, Tabela 3.1)
-## ---------------------------------------------------------
-## Series em nivel: constante e tendencia.
-## Series transformadas: apenas constante.
-## Em ambos os casos, ate 12 defasagens, escolhidas por Schwarz.
+
 
 adf <- function(x, tipo) {
   teste <- ur.df(na.omit(x), type = tipo, lags = 12, selectlags = "BIC")
@@ -192,8 +142,7 @@ tab_adf <- rbind(
   cbind(serie = "ln IC-Br",            adf(log(icbr),   "trend")),
   cbind(serie = "ln P. importacao",    adf(log(pimp),   "trend")),
   cbind(serie = "ln Cambio",           adf(log(cambio), "trend")),
-  # A Selic e testada apenas com constante: uma taxa de juros de politica
-  # nao tem tendencia deterministica.
+
   cbind(serie = "Selic",               adf(selic,       "drift")),
   cbind(serie = "D.ln IC-Br",          adf(dlicbr,      "drift")),
   cbind(serie = "D.ln P. importacao",  adf(dlpimp,      "drift")),
@@ -207,11 +156,7 @@ cat("\n=== TABELA 3.1: TESTES DE RAIZ UNITARIA (ADF) ===\n")
 print(tab_adf, row.names = FALSE)
 write.csv(tab_adf, file.path(PASTA_TABS, "tab_adf.csv"), row.names = FALSE)
 
-## ---------------------------------------------------------
-## 6. Painel final
-## ---------------------------------------------------------
-## As series em primeira diferenca perdem a primeira observacao,
-## entao o painel comeca em fevereiro de 2003.
+
 
 painel <- na.omit(cbind(dlicbr, dlpimp, lvix, hiato, infl, dselic, dlcambio))
 colnames(painel) <- c("dlicbr", "dlpimp", "lvix", "hiato", "infl", "dselic", "dlcambio")
@@ -220,7 +165,7 @@ cat("\nPainel:", start(painel)[1], "/", start(painel)[2],
     "a", end(painel)[1], "/", end(painel)[2],
     "|", nrow(painel), "observacoes\n")
 
-# uma pagina por variavel do VAR, ja transformada
+
 rotulos <- c("Commodities (variacao % mensal)",
              "Precos de importacao (variacao % mensal)",
              "VIX (logaritmo)",
