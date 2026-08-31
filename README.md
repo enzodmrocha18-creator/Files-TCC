@@ -1,5 +1,5 @@
 # Files-TCC
-R scripts worth running
+R scripts worth running, rsrs
 
 
 Dinâmica inflacionária brasileira: choques de commodities,
