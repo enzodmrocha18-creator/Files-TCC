@@ -1,30 +1,4 @@
-## ---------------------------------------------------------
-## 5. O papel do cambio: contrafactual Sims-Zha (Secao 3.4.2, Tabela 4.2)
-## ---------------------------------------------------------
-## Decompoe a resposta da inflacao ao choque de commodities em
-##
-##     resposta total = resposta sem o canal do cambio + canal do cambio
-##
-## O contrafactual mantem o cambio parado na trajetoria de base. Para
-## isso, a cada mes do horizonte injeta-se um choque cambial do tamanho
-## exato do movimento que o cambio faria, com sinal contrario. Como a
-## dinamica do sistema volta a mover o cambio no mes seguinte, a
-## compensacao precisa ser refeita mes a mes.
-##
-## O procedimento e o de Sims e Zha (1995), tal como aplicado por
-## Bernanke, Gertler e Watson (1997, p. 106).
-##
-## A diferenca entre as duas trajetorias recolhe TODOS os caminhos que
-## passam pelo cambio, inclusive as realimentacoes (commodities -> cambio
-## -> Selic -> inflacao, por exemplo), e nao apenas o caminho direto.
 
-## Funcao de decomposicao, escrita na forma companheira do VAR.
-## shock       : variavel que recebe o choque (commodities)
-## mediator    : variavel a ser mantida parada (cambio)
-## target      : variavel cuja resposta se quer decompor (IPCA)
-## compensator : choque usado para segurar o mediador (o proprio cambio)
-## shut_impact : TRUE  neutraliza o cambio desde o mes 0
-##               FALSE neutraliza apenas a partir do mes 1
 
 bgw_channel <- function(A_list, B, shock, mediator, target,
                         H = 24, compensator = mediator,
@@ -69,19 +43,19 @@ bgw_channel <- function(A_list, B, shock, mediator, target,
              mediador_cf       = cf[, mediator])
 }
 
-## ---------------------------------------------------------
-## Aplicacao ao VAR estimado
-## ---------------------------------------------------------
+
+# Aplicacao ao VAR estimado
+
 
 i_comm   <- which(colnames(y) == "comm")
 i_cambio <- which(colnames(y) == "cambio")
 i_ipca   <- which(colnames(y) == "ipca")
 
-## A matriz de impacto B e o fator de Cholesky da matriz de covariancia
-## dos residuos, na mesma ordenacao da Secao 3.3.2. E calculada aqui do
-## mesmo jeito que o pacote vars faz por dentro do irf(), com correcao de
-## graus de liberdade, para que o contrafactual e as FRIs da Tabela 4.1
-## fiquem exatamente na mesma escala.
+# A matriz de impacto B e o fator de Cholesky da matriz de covariancia
+# dos residuos, na mesma ordenacao da Secao 3.3.2. E calculada aqui do
+# mesmo jeito que o pacote vars faz por dentro do irf(), com correcao de
+# graus de liberdade, para que o contrafactual e as FRIs da Tabela 4.1
+# fiquem exatamente na mesma escala.
 
 matriz_B <- function(v) {
   U     <- resid(v)
@@ -92,18 +66,12 @@ matriz_B <- function(v) {
   B
 }
 
-## Conferencia da escala: o valor abaixo tem que ser igual ao esc_comm
-## usado na Tabela 4.1.
+
 cat("\nEscala do choque de commodities\n")
 cat("  pela matriz B :", round(matriz_B(var1)[i_comm, i_comm], 6), "\n")
 cat("  pelo irf()    :", round(esc_comm, 6), "\n")
 
-## Rotina completa: roda a decomposicao, acumula as respostas e
-## normaliza para um choque de 1% nas commodities.
-##
-## As respostas saem mes a mes. Como o IPCA entra no VAR em variacao
-## mensal, a soma das respostas ate h e o efeito acumulado sobre o
-## NIVEL de precos, que e o que se quer reportar.
+
 
 decompor <- function(v, H = 24, shut_impact = TRUE) {
   B  <- matriz_B(v)
@@ -137,13 +105,7 @@ cat("total       : resposta acumulada do IPCA ao choque de 1% nas commodities\n"
 cat("sem_canal   : a mesma resposta com o cambio mantido parado\n")
 cat("canal_cambio: diferenca entre as duas, negativa se o cambio amortece\n")
 
-## ---------------------------------------------------------
-## Robustez da convencao de impacto (nota metodologica, secao 3.3)
-## ---------------------------------------------------------
-## Na ordenacao de Cholesky adotada o cambio vem depois do IPCA, entao
-## um choque cambial nao afeta a inflacao no mes do impacto. Por isso as
-## duas convencoes devem dar resultados proximos. A comparacao abaixo
-## verifica isso.
+
 
 cf_h1 <- decompor(var1, H, shut_impact = FALSE)
 cat("\nRobustez, cambio neutralizado so a partir do mes 1:\n")
@@ -152,9 +114,9 @@ print(data.frame(horizonte = hh,
                  canal_desde_mes1 = round(cf_h1$canal[hh + 1], 3)),
       row.names = FALSE)
 
-## ---------------------------------------------------------
-## Grafico das duas trajetorias
-## ---------------------------------------------------------
+
+# Grafico das duas trajetorias
+
 
 pdf(file.path(PASTA_GRAF, "07_contrafactual.pdf"), width = 10, height = 6)
 par(mar = c(5, 5, 4, 2))
@@ -174,12 +136,9 @@ legend("topleft",
        lty = c(1, 2, 1), bty = "n", cex = 1.1)
 invisible(dev.off())
 
-## ---------------------------------------------------------
-## Intervalo de confianca por bootstrap
-## ---------------------------------------------------------
-## A nota metodologica e explicita: a cada replicacao o VAR precisa ser
-## reestimado e reidentificado, e o contrafactual refeito. Nao se pode
-## manter A e B fixos. Demora alguns minutos.
+ # a cada replicacao o VAR precisa ser
+# reestimado e reidentificado, e o contrafactual refeito. Nao se pode
+#  manter A e B fixos. Demora alguns minutos.
 
 simular <- function(v) {
   K  <- v$K
