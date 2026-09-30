@@ -5,7 +5,7 @@ faltando <- pacotes[!pacotes %in% rownames(installed.packages())]
 if (length(faltando) > 0) install.packages(faltando, repos = "https://cloud.r-project.org")
 
 definir_pasta <- function() {
-  
+ 
   if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
     caminho <- try(rstudioapi::getSourceEditorContext()$path, silent = TRUE)
     if (!inherits(caminho, "try-error") && nzchar(caminho)) {
@@ -24,6 +24,7 @@ cat("Pasta de trabalho:", getwd(), "\n")
 library(seasonal)
 library(mFilter)
 library(urca)
+
 
 
 achar <- function(nomes, pastas = c(".", "Paineis", "../Paineis", "..")) {
@@ -57,7 +58,6 @@ serie_plot <- function(x, titulo, unidade = "", zero = FALSE) {
 }
 
 
-
 ler_painel <- function(arquivo) {
   primeira <- readLines(arquivo, n = 1)
   if (grepl(";", primeira)) read.csv2(arquivo) else read.csv(arquivo)
@@ -77,7 +77,6 @@ if (length(faltando) > 0) {
 
 cat("Painel lido:", nrow(dados), "meses,", ncol(dados), "colunas\n")
 
-# a amostra comeca em janeiro de 2003 e as linhas ja estao em ordem
 inicio <- c(2003, 1)
 
 icbr   <- ts(dados$icbr_usd, start = inicio, frequency = 12)   # IC-Br em US$
@@ -101,9 +100,43 @@ serie_plot(vix,    "Indice VIX", "pontos")
 
 
 
+plot(log(icbr), type = "l", lwd = 2, col = "grey20",
+     ylim = range(c(log(icbr), log(pimp))),
+     main = "IC-Br e precos de importacao, em logaritmo",
+     xlab = "", ylab = "log do indice",
+     cex.main = 1.5, cex.axis = 1.2, cex.lab = 1.2)
+lines(log(pimp), lwd = 2, lty = 2, col = "grey55")
+grid(col = "grey85")
+legend("topleft", c("IC-Br (US$)", "precos de importacao (US$)"),
+       col = c("grey20", "grey55"), lwd = 2, lty = c(1, 2),
+       bty = "n", cex = 1.2)
+
+pdf(file.path(PASTA_GRAF, "10_icbr_pimp.pdf"), width = 10, height = 6)
+par(mar = c(4, 5, 4, 2))
+plot(log(icbr), type = "l", lwd = 2, col = "grey20",
+     ylim = range(c(log(icbr), log(pimp))),
+     main = "IC-Br e precos de importacao, em logaritmo",
+     xlab = "", ylab = "log do indice",
+     cex.main = 1.5, cex.axis = 1.2, cex.lab = 1.2)
+lines(log(pimp), lwd = 2, lty = 2, col = "grey55")
+grid(col = "grey85")
+legend("topleft", c("IC-Br (US$)", "precos de importacao (US$)"),
+       col = c("grey20", "grey55"), lwd = 2, lty = c(1, 2),
+       bty = "n", cex = 1.2)
+invisible(dev.off())
+
+cor_nivel <- cor(log(icbr), log(pimp))
+cor_var   <- cor(dlicbr_tmp <- 100 * diff(log(icbr)),
+                 100 * diff(log(pimp)))
+
+cat("\nCorrelacao entre IC-Br e precos de importacao\n")
+cat("  em logaritmo do nivel   :", round(cor_nivel, 3), "\n")
+cat("  em variacao mensal (VAR):", round(cor_var, 3), "\n")
+
+
+
 infl <- final(seas(ipca))
 
-# comparacao entre a serie observada e a dessazonalizada
 plot(ipca, type = "l", lwd = 1.4, col = "grey65",
      main = "IPCA: observado e dessazonalizado", xlab = "", ylab = "% a.m.",
      cex.main = 1.5, cex.axis = 1.2, cex.lab = 1.2)
@@ -112,7 +145,6 @@ abline(h = 0, col = "red", lty = 2)
 grid(col = "grey85")
 legend("topleft", c("observado", "dessazonalizado"),
        col = c("grey65", "black"), lwd = c(1.4, 2), bty = "n", cex = 1.2)
-
 
 
 hp    <- hpfilter(log(ibcbr), freq = 14400, type = "lambda")
@@ -127,7 +159,6 @@ dlpimp   <- 100 * diff(log(pimp))
 dlcambio <- 100 * diff(log(cambio))
 dselic   <- diff(selic)               # Selic em primeira diferenca
 lvix     <- log(vix)                  # VIX em logaritmo
-
 
 
 adf <- function(x, tipo) {
@@ -157,7 +188,6 @@ print(tab_adf, row.names = FALSE)
 write.csv(tab_adf, file.path(PASTA_TABS, "tab_adf.csv"), row.names = FALSE)
 
 
-
 painel <- na.omit(cbind(dlicbr, dlpimp, lvix, hiato, infl, dselic, dlcambio))
 colnames(painel) <- c("dlicbr", "dlpimp", "lvix", "hiato", "infl", "dselic", "dlcambio")
 
@@ -165,7 +195,7 @@ cat("\nPainel:", start(painel)[1], "/", start(painel)[2],
     "a", end(painel)[1], "/", end(painel)[2],
     "|", nrow(painel), "observacoes\n")
 
-
+# uma pagina por variavel do VAR, ja transformada
 rotulos <- c("Commodities (variacao % mensal)",
              "Precos de importacao (variacao % mensal)",
              "VIX (logaritmo)",
@@ -183,3 +213,4 @@ write.csv(data.frame(data = time(painel), painel),
           file.path(PASTA_PAINEIS, "painel_var.csv"), row.names = FALSE)
 cat("\nGravados:", file.path(PASTA_PAINEIS, "painel_var.csv"),
     "e", file.path(PASTA_TABS, "tab_adf.csv"), "\n")
+
