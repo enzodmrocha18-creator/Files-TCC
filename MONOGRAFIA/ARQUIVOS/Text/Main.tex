@@ -1,359 +1,46 @@
-%=======================================================================
-%  Dinâmica inflacionária brasileira: choques de commodities,
-%  inflação importada e o papel do câmbio
-%  Enzo De Martino da Rocha — PUC-Rio
-%
-%  VERSÃO REVISADA. Alterações principais:
-%   [1] Chaves de citação unificadas (elimina os "??" do PDF anterior)
-%   [2] Referências corrigidas: stockl2017 (era "neto2015"),
-%       carrarabarros2019 (era "carrara2015"), nogueirajr2007
-%   [3] Período amostral uniformizado: 2003:01–2026:05
-%   [4] Inflação importada incluída no vetor (sistema de 7 variáveis)
-%   [5] Erro de sinal corrigido na hipótese de simetria (eq. lp)
-%   [6] Definição de beta_n corrigida na Seção 2.1
-%   [7] Rótulo duplicado "sec:naolinear" desfeito
-%   [8] Labels ausentes criados; referências cruzadas manuais → \ref
-%   [9] booktabs/amsmath carregados; Quadro 3.1 em ambiente quadroabnt
-%  [10] abnt-etal-cite=3 (et al. só a partir de 4 autores)
-%
-%
-%  ---------------------------------------------------------------------
-%  REVISÃO 2 — correções aplicadas nesta versão:
-%   [11] Chaves de citação do Cap. 3 corrigidas: carrara2019 ->
-%        carrarabarros2019; nogueira2007 -> nogueirajr2007
-%   [12] \label{cap:dados} criado (5 referências apontavam para o vazio)
-%   [13] \ref{ape:robustez} -> \ref{ape:robustez} (4 ocorrências)
-%   [14] Labels criados: sec:variaveis, sec:fri, sec:decomphist, sec:regime
-%   [15] Seção 3.5.3 reposta (amortecimento x aversão a risco). O Cap. 1 e o
-%        Cap. 2 prometiam esse exercício, que não constava do Cap. 3.
-%   [16] Período amostral uniformizado de fato: maio/2026 no Resumo,
-%        Abstract, Cap. 1 e Cap. 2 (antes diziam março)
-%   [17] \textual inserido antes do Cap. 1 (faltava; quebrava a paginação)
-%   [18] Quadro 3.1 movido para o ambiente quadroabnt; tabelas numeradas por
-%        capítulo (\counterwithin), gerando Quadro 3.1 / Tabela 3.1 / Tabela A.1
-%   [19] \paragraph -> \subsubsection na Seção 3.1.2, restaurando a
-%        numeração 3.1.2.1–3.1.2.6 e limpando o sumário
-%   [20] "definido em~(2.1)" -> \eqref{eq:erpt}; referências manuais de
-%        seção do Cap. 3 trocadas por \ref
-%   [21] \providecommand{\newlinetospace}: versões recentes do memoir
-%        removeram esse comando, o que quebra o cabeçalho fora do Overleaf
-%   [22] Lista do Apêndice A atualizada (sem Zivot-Andrews e sem Hamilton)
-%   [23] Travessões eliminados do texto (72 ocorrências). Cada um foi
-%        substituído conforme a função que exercia na frase: vírgula em
-%        apostos curtos, parênteses quando o inciso já continha vírgulas,
-%        dois-pontos quando introduzia explicação ou lista, e divisão em
-%        nova frase nos casos mais longos. Os hifens duplos de intervalo
-%        (2003:02--2026:05) foram preservados, pois são o uso correto.
-%   [24] Ajuste sazonal do IPCA simplificado: fatores por variáveis binárias
-%        de mês, estimados até 2019, no lugar do X-13ARIMA-SEATS. O IBC-Br
-%        não é mais reajustado, pois o SGS 24364 já é dessazonalizado.
-%        Efeito na Tabela 3.1: IPCA passa de ADF -9,27 / KPSS 0,07 para
-%        ADF -10,01 / KPSS 0,09. A conclusão I(0) não muda.
-%   [25] Seção 3.3.1: os três critérios de informação passam a indicar duas
-%        defasagens (antes o AIC indicava três). A ordem escolhida segue
-%        sendo p = 5, pela ausência de autocorrelação residual.
-%   [26] Tabela A.1 recalculada na amostra em nível (2003:01--2026:05).
-%  ---------------------------------------------------------------------
-%  REVISÃO 3 — alinhamento ao material do curso (Econometria II, PUC-Rio):
-%   [29] Capítulo 3 reescrito por inteiro seguindo os procedimentos e a
-%        notação das aulas. Estimação e análise passam a ser feitas com o
-%        pacote vars (VARselect, VAR, roots, stability, serial.test,
-%        causality, irf, fevd), como na aula prática 14.
-%   [30] Testes de raiz unitária: apenas ADF (ur.df), único teste
-%        desenvolvido no curso. O KPSS foi retirado: aparece uma única vez
-%        no material, citado numa lista de "outros testes".
-%   [31] Pelo ADF no padrão do professor, a Selic NÃO rejeita a raiz
-%        unitária em nenhuma especificação e passa a entrar em primeira
-%        diferença. Isso elimina a discussão anterior de "I(0) persistente".
-%   [32] Dessazonalização volta a ser X-13ARIMA-SEATS (seasonal::seas),
-%        como na aula 10. O ajuste por variáveis binárias foi descartado.
-%   [33] Exercício contrafactual removido: não consta do curso. O papel do
-%        câmbio passa a ser medido pelo produto de duas funções de resposta
-%        (Seção 3.4.2), que reproduz o mesmo número.
-%   [34] Removido o exercício de regime de aversão a risco, que dependia do
-%        contrafactual. As promessas correspondentes saíram do Cap. 1 e 2.
-%   [35] Ordem de defasagens p = 5, pelo teste de Breusch-Godfrey.
-%   [36] Capítulo 2 revisado por inteiro. Correções:
-%        (a) a Seção 2.3.3 prometia que o Cap. 3 testaria o amortecimento
-%            "em momentos de forte aversão a risco global"; esse exercício
-%            foi removido, e a promessa foi reescrita.
-%        (b) o parágrafo sobre grau de abertura estava solto dentro da
-%            subseção de credibilidade; virou a Seção 2.2.2.
-%        (c) a Seção 2.2.4 apresentava três não-linearidades sem dizer
-%            quais seriam testadas; agora diz, e justifica a exclusão da
-%            terceira.
-%        (d) linguagem de método simplificada: "Curva de Phillips com
-%            limiar" e "vetor autorregressivo com correção de erros"
-%            passaram a ser descritos em palavras.
-%        (e) retirada a generalização sem fonte sobre "os trabalhos sobre
-%            o episódio" na antiga Seção 2.5.
-%        (f) nova Seção 2.6, que reúne as decisões do Cap. 3 que decorrem
-%            da revisão, dando fecho ao capítulo.
-%   [37] Capítulo 1 reescrito. Correções:
-%        (a) prometia medir o papel dual do câmbio "amplificador em fases
-%            de depreciação, amortecedor em fases de apreciação", exercício
-%            que foi retirado do Cap. 3; agora descreve o que o trabalho
-%            de fato mede.
-%        (b) retirada a promessa de "fornecer base empírica para a
-%            calibração da função de reação do Banco Central", que o
-%            trabalho não entrega.
-%        (c) registro simplificado: frases mais curtas, menos subordinadas,
-%            sem a oposição "ponto de vista positivo x normativo".
-%        (d) a pergunta de pesquisa passou a incluir explicitamente o papel
-%            do câmbio, que é o objetivo central declarado no Cap. 3.
-%   [38] Resumo e Abstract alinhados ao Cap. 3: sai a promessa do papel
-%        dual por regime cambial, entra a descrição do que é estimado.
-%        "VAR/SVAR" passa a "vetores autorregressivos" e a palavra-chave
-%        SVAR passa a VAR, já que a identificação é por Cholesky simples.
-%  ---------------------------------------------------------------------
-%   [27] Carta Aberta de 2021 conferida na fonte: os 4,38 p.p. de inflação
-%        importada sobre um desvio de 6,31 p.p. estão CORRETOS. A soma de
-%        petróleo, commodities e câmbio (4,10 p.p.) não fechava porque a
-%        rubrica tem componentes adicionais. A decomposição completa foi
-%        acrescentada em nota de rodapé na Introdução.
-%   [28] Capítulo 2 reescrito por inteiro em registro de graduação. Retirada
-%        a Seção 2.5 antiga (revisão da literatura internacional pós-2021,
-%        com a controvérsia oferta x demanda e a crítica metodológica de
-%        Bergholt), substituída por uma seção curta sobre o choque de
-%        2021-2022. Saíram as citações arce2024, ascari2024, bergholt2024,
-%        gopinath2020 e lansing2026. O capítulo caiu de 19 para 8 páginas.
-%        Corrigida, com isso, a promessa quebrada da antiga Seção 2.5.4,
-%        que dizia incorporar à Seção 3.4.2 duas correções que o Capítulo 3
-%        não implementava.
-%  ---------------------------------------------------------------------
-%
-%  Nao ha pendencias de bibliografia: o Capitulo 3 passou a usar apenas o
-%  teste ADF, e a entrada kwiatkowski1992 deixou de ser citada.
-%
-%  Todos os marcadores [VERIFICAR] foram resolvidos (ver itens [27] e [28]).
-%=======================================================================
-%
-%  REVISÃO 4 — Seção 3.4.2 refeita a pedido do orientador:
-%
-%   [39] A medida do papel do câmbio deixou de ser o produto de duas
-%        respostas acumuladas (A_n = -theta x beta) e passou a ser a
-%        diferença entre a FRI usual e uma FRI contrafactual em que o
-%        câmbio é mantido na trajetória de base por inovações
-%        compensatórias período a período. É o procedimento de Sims e
-%        Zha, aplicado por Bernanke, Gertler e Watson (1997, p. 106).
-%        Motivo: o produto das duas respostas ignora as realimentações
-%        do sistema, e a resposta total já contém o movimento do câmbio
-%        dentro dela. Duas referências novas: simszha2006, bernanke1997.
-%        A limitação correspondente, no fim do Capítulo 3, foi reescrita.
-%
-%   [40] Capítulo 4 (Resultados) escrito. Cinco seções: diagnósticos,
-%        respostas a impulso (Tabela 4.1), canal do câmbio (Tabela 4.2 e
-%        Figura 4.1), decomposição da variância e Granger (Tabela 4.3),
-%        estabilidade (Tabelas 4.4 e 4.5) e síntese. Todos os números
-%        vêm das saídas do 02_var.R, em Tabs/. Pacote multirow carregado
-%        para a Tabela 4.1. A figura usa graficos/07_contrafactual.pdf.
-%
-%  REVISÃO 5 — revisão geral do PDF (capítulos 1 a 4):
-%
-%   [41] Resumo e Abstract reescritos: saíram do tempo futuro e passaram a
-%        reportar os resultados (0,078 / 0,102 / 0,133 / 0,055 p.p.).
-%   [42] Seção 4.2: retirada a afirmação de que a magnitude estaria "na faixa
-%        que a literatura brasileira recente encontra", que remetia a uma
-%        seção sem números de comparação. Substituída por remissão à
-%        Seção 2.4.2, que de fato sustenta a leitura.
-%   [43] Seção 3.4.3: horizontes da decomposição da variância corrigidos de
-%        "3, 6, 12 e 24" para "3, 12 e 24", que é o que a Tabela 4.3 traz.
-%   [44] Seção 3.1.3: "choque de 2020 e 2021" corrigido para "2021 e 2022".
-%   [45] Seção 2.4.3: descrição do método atualizada. Não é mais medição
-%        direta a partir das FRIs, e sim contrafactual sobre o sistema já
-%        estimado. Acrescentado o contraste com Stöckl et al., que reestimam
-%        o sistema sem o câmbio.
-%   [46] Numeração das figuras por capítulo (\counterwithin{figure}{chapter}).
-%   [47] Data da capa: agosto -> setembro de 2026.
-%   [48] Seção 4.4: acrescentado parágrafo explicando por que a ordem da
-%        decomposição da variância difere da ordem da Tabela 4.1 (efeito por
-%        unidade x ponderação pela volatilidade de cada choque).
-%   [49] Seção 4.3: "quase o dobro" -> "cerca de setenta por cento acima"
-%        (0,133/0,078 = 1,7).
-%   [50] Seção 3.3.1: réplicas do bootstrap especificadas (mil no sistema
-%        completo, quinhentas nos exercícios com reestimação).
-%   [51] "pouco menos de trinta por cento" e "pouco menos de um terço"
-%        harmonizados em "cerca de trinta por cento" (o número é 29,0%).
-%
-%
-%  REVISÃO 6 — simplificação de linguagem (sem mudar nenhum resultado):
-%
-%   [52] Seção 2.2.4: os três padrões de não-linearidade viraram três
-%        parágrafos curtos (sinal, tamanho, momento), em vez de um bloco
-%        único com "o primeiro / o segundo / o terceiro".
-%   [53] Seção 2.6: reescrita em frases mais curtas; a abertura deixou de
-%        ser "Convém encerrar reunindo as decisões que a revisão sugere".
-%   [54] Seção 3.3.2: o parágrafo com seis justificativas de ordenação foi
-%        quebrado em três, um por bloco de variáveis.
-%   [55] Seção 3.4.2: as três decisões de implementação viraram três
-%        parágrafos, cada um respondendo a uma pergunta clara.
-%
-%
-%  REVISÃO 7 — passada geral de linguagem (nenhum resultado alterado):
-%
-%   [56] Retiradas as aberturas de parágrafo formais e vazias: "Convém
-%        notar", "Cabe registrar", "Vale registrar", "devem ser reconhecidas
-%        de antemão", "Há, porém, uma qualificação importante".
-%   [57] Frases acima de 40 palavras quebradas em duas ou três, no Resumo,
-%        no Abstract, nas Seções 2.2.3, 2.4.3, 3.1.2.2, 4.5.1 e na abertura
-%        do Capítulo 4.
-%   [58] Introdução: "o Capítulo 4" passou a usar \ref{cap:resultados}.
-%
-%
-%  REVISÃO 12 — comentários do orientador na versão preliminar:
-%
-%   [71] CORREÇÃO DE MÉTODO, a mais importante. O repasse deixou de ser a
-%        resposta acumulada do IPCA dividida pelo impacto inicial do
-%        choque e passou a ser a divisão pela variação ACUMULADA da
-%        variável de origem no mesmo horizonte (nova equação 3.6). Motivo
-%        dado pelo orientador: a variável continua respondendo ao choque
-%        depois do primeiro mês, e é a variação acumulada dela que importa
-%        para a variação acumulada do nível de preços. Muda as Tabelas
-%        4.1, 4.2 e 4.4, o Resumo, o Abstract e a Síntese. Em 12 meses:
-%        commodities 0,078 -> 0,059; câmbio 0,102 -> 0,079; contrafactual
-%        0,133 -> 0,101; canal cambial -0,055 -> -0,042. O intervalo de
-%        confiança passou a vir de bootstrap da própria razão, e não das
-%        bandas do numerador, que ignoravam a incerteza do denominador.
-%   [72] Acrescentadas as Figuras 4.1 e 4.2, com as respostas do IPCA
-%        pontuais e acumuladas, antes da Tabela 4.1, a pedido dele.
-%   [73] Causalidade de Granger passou a ter tabela própria (Tabela 4.4),
-%        com estatística F, graus de liberdade e valor-p. Antes o texto
-%        descrevia o resultado sem mostrar número.
-%   [74] Nova Seção 4.6: robustez da ordenação de Cholesky, com o modelo
-%        reestimado sob três ordens alternativas (Tabela 4.7). Os
-%        resultados praticamente não se movem.
-%   [75] Seção 3.1.2.2: acrescentados o gráfico comparativo IC-Br x preços
-%        de importação (Figura 3.1) e as correlações, 0,87 em nível e
-%        0,25 em variação mensal.
-%   [76] Seção 3.1.2.1: registrada a endogeneidade parcial do IC-Br, cujos
-%        pesos foram construídos a partir da relevância de cada commodity
-%        para a inflação brasileira. Vira também a quinta limitação.
-%   [77] Seção 3.6: sexta limitação, sobre o VAR com exogeneidade em
-%        bloco. A ordenação impede efeito contemporâneo das domésticas
-%        sobre as externas, mas não zera as defasagens.
-%   [78] Seção 2.1: título passou a "O repasse do câmbio e dos preços
-%        externos" e o escopo do conceito ficou explícito, distinguindo
-%        repasse cambial de repasse de preços externos.
-%   [79] Seção 2.6: a justificativa para incluir hiato e Selic foi
-%        reordenada. A razão principal é entender os canais de
-%        transmissão; a ajuda na identificação é secundária.
-%   [80] Seção 2.6: o fecho deixou de apresentar o contrafactual como
-%        única contribuição e passou a listar as três.
-%   [81] Seção 3.3.2: retirada a menção em terceira pessoa ao julgamento
-%        do pesquisador e acrescentado que a ordenação é necessariamente
-%        arbitrária, com remissão ao exercício de robustez.
-%   [82] Seções 3.5.1 e 4.5.1: explicitado que comparar intervalos não é
-%        teste formal, e sim evidência indicativa.
-%   [83] Seções 3.5.2 e 4.5.2: explicitado que a regressão de assimetria é
-%        ilustrativa e trata o câmbio como exógeno, ao contrário do VAR.
-%
-%   [84] COMENTARIO QUE EU TINHA PERDIDO: na primeira leitura das
-%        anotacoes do PDF a extracao falhou antes da ultima pagina e o
-%        comentario da p.38 nao apareceu. Ele pedia uma secao comparando
-%        os resultados com a literatura, alem da conclusao. Secao 4.7
-%        escrita (Como esses resultados se comparam a literatura). A
-%        conclusao fica para o Capitulo 5, na versao final.
-%   [85] Secao 3.1.2.5: a justificativa da Selic ainda dizia que sem ela a
-%        resposta "viria contaminada". O orientador havia corrigido isso
-%        (p.22, "nao necessariamente - veja comentario mais acima"). A
-%        razao principal passou a ser a mesma da Secao 2.6: a reacao do
-%        Banco Central faz parte do mecanismo que se quer entender.
-%   [86] Secao 2.6: "a Secao 2.2.4 mostrou" -> "sugere", como ele anotou.
-%   [87] Introducao: acrescentado paragrafo deixando explicito que o
-%        episodio de 2021 e 2022 e o centro do interesse, o que ele
-%        observou nao estar claro na motivacao (p.23).
-%
-%   [88] Secao 2.1: a definicao de beta_n foi corrigida na origem. A
-%        equacao (2.1) passou a ter denominador acumulado, e caiu a frase
-%        que dizia que as FRIs acumuladas "podem ser lidas diretamente
-%        como estimativa de beta_n", que era justamente o erro apontado
-%        pelo orientador na p.10. Acrescentado o paragrafo explicando por
-%        que o denominador precisa acumular.
-%
-%   [89] Abertura do Capitulo 4 atualizada: listava quatro secoes e o
-%        capitulo passou a ter seis, com a robustez da ordenacao e a
-%        comparacao com a literatura.
-%
-%  REVISÃO 13 — passada final de registro (nenhum numero alterado):
-%
-%   [90] Reduzidas de 27 para 10 as enumeracoes do tipo "A primeira e / A
-%        segunda e / A terceira e", que davam ao texto um ritmo mecanico.
-%        Afetou as Secoes 2.6, 3.3.2, 3.4.2, 4.1, 4.3, 4.5.1 e 4.7.
-%   [91] Afirmacoes categoricas suavizadas: "O resultado confirma o
-%        mecanismo" -> "vai na direcao esperada"; "Os resultados sao
-%        claros" retirado; "onde mora o erro mais comum" -> "merece
-%        atencao"; "coerente com o consenso da literatura" -> "com o que a
-%        literatura vinha encontrando"; "a diferenca provavel" -> "uma
-%        explicacao possivel"; "ja captam o que havia para captar" ->
-%        "parecem captar o que ha para captar".
-%   [92] Variadas as aberturas repetidas ("Falta dizer", "Falta explicar",
-%        "Tres leituras se destacam").
-%
-%   [93] O item [87] foi desfeito. Em vez de acrescentar um paragrafo a
-%        introducao afirmando que o choque de 2021-22 e o objeto central,
-%        a frase da Secao 3.1.3 foi rebaixada: o choque "esta no centro do
-%        periodo que se quer medir". Some a afirmacao forte, sem deixar a
-%        escolha de manter o periodo pandemico sem justificativa.
-%
-%   PENDENTE (dados): o orientador sugeriu duas verificações que dependem
-%   de séries que ainda não estão no painel. (a) refazer o exercício com
-%   um índice internacional de commodities cujos pesos não dependam da
-%   inflação brasileira; (b) um teste de robustez incluindo as
-%   expectativas de inflação do Boletim Focus.
-%
-%   PENDENTE (fora do .tex): no references.bib, a entrada nogueirajr2007 está
-%   com o sobrenome em caixa alta e sai como "NOGUEIRA JÚNIOR (2007)" no corpo
-%   do texto. Corrigir o campo author para {Nogueira Júnior, Reginaldo P.}.
-%=======================================================================
 
 \documentclass[12pt,openright,oneside,a4paper,portuguese,brazil]{abntex2}
 
-% -- ESTRUTURA BÁSICA -- %
-% abnt-etal-cite=3 / abnt-etal-list=3: "et al." apenas com MAIS de 3 autores,
-% conforme NBR 6023:2018 (8.1.1.2). Antes estava em 2, o que gerava
-% "Sims et al. (1990)" para três autores — erro de norma.
+
 \usepackage[alf,abnt-etal-cite=3,abnt-etal-list=3]{abntex2cite}
 \usepackage[a4paper,margin=3cm]{geometry}
 \usepackage{caption}
 
-% -- MATEMÁTICA E TABELAS -- %
+
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{booktabs}          % \toprule \midrule \bottomrule
 \usepackage{multirow}          % células que ocupam várias linhas (Tabela 4.1)
 \usepackage[flushleft]{threeparttable}
 \usepackage{float}
-% Float próprio para quadros (NBR 14724 / IBGE): título acima, fonte abaixo.
+
 \newfloat{quadroabnt}{htbp}{loq}[chapter]
 \floatname{quadroabnt}{Quadro}
-% Numeracao de tabelas por capitulo (3.1, 3.2...), para ficar
-% coerente com a numeracao dos quadros.
+
 \counterwithin{table}{chapter}
 \counterwithin{figure}{chapter}
 
-% -- ESTÉTICA -- %
+
 \usepackage{fancyhdr}
 \pagestyle{fancy}
-% Fallback: \newlinetospace foi removido de versoes recentes do memoir.
-% Sem isto, o cabecalho quebra em distribuicoes TeX Live mais novas.
+
 \providecommand{\newlinetospace}[1]{#1}
 
-% Profundidade de numeração e de sumário: impede que \paragraph gere
-% entradas do tipo "3.1.2.0.1" no sumário (violação da NBR 6024).
+
 \setcounter{secnumdepth}{3}
 \setcounter{tocdepth}{3}
 
-%% -- SUMÁRIO -- %%
+
 \cftsetindents{chapter}{3em}{2em}
 \cftsetindents{section}{5em}{2em}
 \cftsetindents{subsection}{5em}{3em}
 
-% -- MARGENS -- %
+
 \usepackage{ragged2e}
 \usepackage{enumitem}
 \setlist[itemize]{leftmargin=1.5em, labelsep=0.5em, itemsep=0.5em}
 
-% -- FONTES E TÍTULOS -- %
+
 \usepackage{titlesec}
 
 \titleformat{\chapter}[hang]
@@ -365,16 +52,14 @@
 
 \titleformat{\subsection}
   {\sffamily\bfseries\normalsize}{\thesubsection}{1em}{}
-% Sem esta linha, as subsubseções (3.1.2.1 etc.) saem em fonte serifada,
-% destoando de todos os demais títulos, que são sans-serif.
+
 \titleformat{\subsubsection}
   {\sffamily\bfseries\normalsize}{\thesubsubsection}{1em}{}
 
 \usepackage{graphicx}
 \graphicspath{{./}{graficos/}{figuras/}}  % procura as figuras na raiz e nessas pastas
 
-% Metadados do PDF em texto literal: \@title e \@author não estão
-% definidos neste documento e quebrariam a compilação.
+
 \hypersetup{
   pdftitle={Dinâmica inflacionária brasileira: choques de commodities, inflação importada e o papel do câmbio},
   pdfauthor={Enzo De Martino da Rocha},
@@ -397,8 +82,7 @@
 
 
 \begin{document}
-% NBR 14724/6023: o elemento pós-textual denomina-se "Referências".
-% Precisa vir DEPOIS de \begin{document}: o babel redefine \bibname na abertura.
+
 \renewcommand{\bibname}{REFERÊNCIAS}
 \setcounter{tocdepth}{3}
 \pretextual
@@ -406,9 +90,6 @@
 
 \setlength{\parskip}{10pt}
 
-%=======================================================================
-% FOLHA DE ROSTO
-%=======================================================================
 \pagenumbering{arabic}
 \pagestyle{fancy}
 
@@ -454,9 +135,7 @@ Rio de Janeiro, setembro de 2026
 \pagebreak
 
 
-%=======================================================================
-% AGRADECIMENTOS
-%=======================================================================
+
 \section*{Agradecimentos}
 \justifying
 \hspace{1em}
@@ -476,9 +155,7 @@ conclusão deste trabalho.
 \newpage
 
 
-%=======================================================================
-% RESUMO
-%=======================================================================
+
 \section*{Resumo}
 \justifying
 \hspace{1em}
@@ -504,15 +181,13 @@ importação, uma vez controlados os dois primeiros canais, não apresentam
 efeito estatisticamente distinto de zero.
 
 \vspace{\onelineskip}
-% NBR 6028: recomendam-se de três a cinco palavras-chave.
+
 \noindent\textbf{Palavras-chave}: inflação. commodities. pass-through
 cambial. IPCA. VAR.
 
 \newpage
 
-%=======================================================================
-% ABSTRACT
-%=======================================================================
+
 \section*{Abstract}
 \begin{otherlanguage*}{english}
 \justifying
@@ -544,9 +219,7 @@ pass-through. IPCA. VAR.
 \end{otherlanguage*}
 
 
-%=======================================================================
-% SUMÁRIO
-%=======================================================================
+
 \sffamily
 \tableofcontents
 
@@ -1616,9 +1289,7 @@ recente, mas todas condicionam a leitura dos resultados apresentados no
 Capítulo~\ref{cap:resultados}.
 
 
-%=======================================================================
-% CAPÍTULO 4
-%=======================================================================
+
 \chapter{Resultados}
 \label{cap:resultados}
 
@@ -2144,9 +1815,7 @@ estatística.
 
 
 
-%=======================================================================
-% CAPÍTULO 5
-%=======================================================================
+
 \chapter{Conclusão}
 \label{cap:conclusao}
 
@@ -2214,9 +1883,7 @@ implementar a partir do que já está feito.
 \bibliography{references}
 
 
-%=======================================================================
-% APÊNDICES
-%=======================================================================
+
 \begin{apendicesenv}
 
 \chapter{Testes de raiz unitária, diagnósticos e exercícios de robustez}
@@ -2321,17 +1988,3 @@ demais ficam disponíveis para verificação.
 
 \end{document}
 
-% =====================================================================
-%  ENTRADA A ACRESCENTAR AO references.bib
-%  (conferida em fonte primária: Journal of Econometrics, v. 54, 1992)
-% =====================================================================
-% @article{kwiatkowski1992,
-%   author  = {Kwiatkowski, Denis and Phillips, Peter C. B. and Schmidt, Peter and Shin, Yongcheol},
-%   title   = {Testing the null hypothesis of stationarity against the alternative of a unit root: How sure are we that economic time series have a unit root?},
-%   journal = {Journal of Econometrics},
-%   volume  = {54},
-%   number  = {1--3},
-%   pages   = {159--178},
-%   year    = {1992},
-%   doi     = {10.1016/0304-4076(92)90104-Y}
-% }
